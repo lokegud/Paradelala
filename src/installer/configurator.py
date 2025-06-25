@@ -41,6 +41,244 @@ class Configurator:
         """Generate a secure random password"""
         alphabet = string.ascii_letters + string.digits + string.punctuation
         return ''.join(secrets.choice(alphabet) for _ in range(length))
+
+    def _generate_swag_service(self) -> str:
+        """Generate SWAG reverse proxy service configuration"""
+        return """
+  swag:
+    image: lscr.io/linuxserver/swag:latest
+    container_name: swag
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+      - URL=${DOMAIN}
+      - SUBDOMAINS=wildcard
+      - VALIDATION=http
+      - EMAIL=${EMAIL}
+    volumes:
+      - ./config/swag:/config
+    ports:
+      - 443:443
+      - 80:80
+    restart: unless-stopped
+    networks:
+      - homelab
+
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:latest
+    container_name: heimdall
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ./config/heimdall:/config
+    ports:
+      - 8080:80
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_heimdall_service(self) -> str:
+        """Generate Heimdall dashboard service configuration"""
+        return """
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:latest
+    container_name: heimdall
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ./config/heimdall:/config
+    ports:
+      - 8080:80
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+
+    def _generate_nginx_service(self) -> str:
+        """Generate Nginx reverse proxy service"""
+        return """
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/nginx:/etc/nginx/conf.d
+      - ./config/ssl:/etc/ssl/certs
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_caddy_service(self) -> str:
+        """Generate Caddy reverse proxy service"""
+        return """
+  caddy:
+    image: caddy:alpine
+    container_name: caddy
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./config/caddy/Caddyfile:/etc/caddy/Caddyfile
+      - ./config/caddy/data:/data
+      - ./config/caddy/config:/config
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_traefik_service(self) -> str:
+        """Generate Traefik reverse proxy service"""
+        return """
+  traefik:
+    image: traefik:v2.9
+    container_name: traefik
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - ./config/traefik:/etc/traefik
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_prometheus_service(self) -> str:
+        """Generate Prometheus monitoring service"""
+        return """
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./config/prometheus:/etc/prometheus
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_grafana_service(self) -> str:
+        """Generate Grafana dashboard service"""
+        return """
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_portainer_service(self) -> str:
+        """Generate Portainer container management service"""
+        return """
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    ports:
+      - "9000:9000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer_data:/data
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_pihole_service(self) -> str:
+        """Generate Pi-hole DNS service"""
+        return """
+  pihole:
+    image: pihole/pihole:latest
+    container_name: pihole
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "8053:80/tcp"
+    environment:
+      - TZ=${TZ}
+      - WEBPASSWORD=${PIHOLE_PASSWORD}
+    volumes:
+      - ./config/pihole/etc:/etc/pihole
+      - ./config/pihole/dnsmasq:/etc/dnsmasq.d
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_nextcloud_service(self) -> str:
+        """Generate Nextcloud file sharing service"""
+        return """
+  nextcloud:
+    image: nextcloud:apache
+    container_name: nextcloud
+    ports:
+      - "8081:80"
+    environment:
+      - NEXTCLOUD_ADMIN_USER=admin
+      - NEXTCLOUD_ADMIN_PASSWORD=${NEXTCLOUD_PASSWORD}
+    volumes:
+      - nextcloud_data:/var/www/html
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_gitlab_service(self) -> str:
+        """Generate GitLab service"""
+        return """
+  gitlab:
+    image: gitlab/gitlab-ce:latest
+    container_name: gitlab
+    ports:
+      - "8082:80"
+      - "2222:22"
+    environment:
+      - GITLAB_ROOT_PASSWORD=${GITLAB_PASSWORD}
+    volumes:
+      - gitlab_data:/var/opt/gitlab
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_vault_service(self) -> str:
+        """Generate HashiCorp Vault service"""
+        return """
+  vault:
+    image: vault:latest
+    container_name: vault
+    ports:
+      - "8200:8200"
+    environment:
+      - VAULT_DEV_ROOT_TOKEN_ID=${VAULT_TOKEN}
+    volumes:
+      - vault_data:/vault/data
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
     
     def generate_secrets(self):
         """Generate all required secrets"""
@@ -78,333 +316,114 @@ class Configurator:
         # Fallback to random key
         return self.generate_password(44)
     
-    def generate_docker_compose(self):
-        """Generate docker-compose.yml based on selected services"""
-        print("Generating docker-compose.yml...")
+
+    def _generate_swag_service(self) -> str:
+        """Generate SWAG reverse proxy service configuration"""
+        return """
+  swag:
+    image: lscr.io/linuxserver/swag:latest
+    container_name: swag
+    cap_add:
+      - NET_ADMIN
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+      - URL=${DOMAIN}
+      - SUBDOMAINS=wildcard
+      - VALIDATION=http
+      - EMAIL=${EMAIL}
+    volumes:
+      - ./config/swag:/config
+    ports:
+      - 443:443
+      - 80:80
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def _generate_heimdall_service(self) -> str:
+        """Generate Heimdall dashboard service configuration"""
+        return """
+  heimdall:
+    image: lscr.io/linuxserver/heimdall:latest
+    container_name: heimdall
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TZ}
+    volumes:
+      - ./config/heimdall:/config
+    ports:
+      - 8080:80
+    restart: unless-stopped
+    networks:
+      - homelab
+"""
+
+    def generate_docker_compose(self) -> str:
+        """Generate docker-compose.yml content"""
+        services = []
         
-        compose = {
-            "version": "3.8",
-            "services": {},
-            "networks": {
-                "homelab": {
-                    "driver": "bridge",
-                    "ipam": {
-                        "config": [{"subnet": "172.20.0.0/16"}]
-                    }
-                }
-            },
-            "volumes": {}
-        }
+        # Base services
+        services.append("""
+version: '3.8'
+
+services:""")
         
-        # Add selected services
-        selected_services = self.user_config.get("services", {}).get("selected", [])
+        # Add reverse proxy (SWAG or others)
+        if self.user_config.get('enable_swag', False):
+            services.append(self._generate_swag_service())
+        elif self.user_config.get('enable_reverse_proxy', False):
+            proxy_type = self.user_config.get('proxy_type', 'nginx')
+            if proxy_type == 'nginx':
+                services.append(self._generate_nginx_service())
+            elif proxy_type == 'caddy':
+                services.append(self._generate_caddy_service())
+            elif proxy_type == 'traefik':
+                services.append(self._generate_traefik_service())
         
-        # Nginx/Traefik reverse proxy
-        if "nginx_proxy" in selected_services:
-            compose["services"]["nginx"] = {
-                "image": "nginx:alpine",
-                "container_name": "nginx-proxy",
-                "restart": "unless-stopped",
-                "ports": [
-                    "80:80",
-                    "443:443"
-                ],
-                "volumes": [
-                    "./nginx/nginx.conf:/etc/nginx/nginx.conf:ro",
-                    "./nginx/conf.d:/etc/nginx/conf.d:ro",
-                    "./nginx/ssl:/etc/nginx/ssl:ro",
-                    "nginx-cache:/var/cache/nginx"
-                ],
-                "networks": ["homelab"],
-                "logging": {
-                    "driver": "json-file",
-                    "options": {
-                        "max-size": "10m",
-                        "max-file": "3"
-                    }
-                }
-            }
-            compose["volumes"]["nginx-cache"] = {}
+        # Add Heimdall dashboard
+        if self.user_config.get('enable_heimdall', False):
+            services.append(self._generate_heimdall_service())
         
-        elif "traefik" in selected_services:
-            compose["services"]["traefik"] = {
-                "image": "traefik:v2.10",
-                "container_name": "traefik",
-                "restart": "unless-stopped",
-                "security_opt": ["no-new-privileges:true"],
-                "ports": [
-                    "80:80",
-                    "443:443",
-                    "8080:8080"
-                ],
-                "environment": {
-                    "CF_API_EMAIL": self.user_config.get("basic_settings", {}).get("email", ""),
-                    "CF_DNS_API_TOKEN": "${CF_DNS_API_TOKEN}"
-                },
-                "volumes": [
-                    "/var/run/docker.sock:/var/run/docker.sock:ro",
-                    "./traefik/traefik.yml:/traefik.yml:ro",
-                    "./traefik/config.yml:/config.yml:ro",
-                    "traefik-acme:/acme"
-                ],
-                "networks": ["homelab"],
-                "labels": {
-                    "traefik.enable": "true",
-                    "traefik.http.routers.traefik.entrypoints": "http",
-                    "traefik.http.routers.traefik.rule": "Host(`traefik.${DOMAIN}`)",
-                    "traefik.http.routers.traefik-secure.entrypoints": "https",
-                    "traefik.http.routers.traefik-secure.rule": "Host(`traefik.${DOMAIN}`)",
-                    "traefik.http.routers.traefik-secure.tls": "true",
-                    "traefik.http.routers.traefik-secure.service": "api@internal"
-                }
-            }
-            compose["volumes"]["traefik-acme"] = {}
+        # Add monitoring services
+        if self.user_config.get('enable_monitoring', False):
+            services.append(self._generate_prometheus_service())
+            services.append(self._generate_grafana_service())
         
-        # Monitoring stack
-        if "prometheus" in selected_services:
-            compose["services"]["prometheus"] = {
-                "image": "prom/prometheus:latest",
-                "container_name": "prometheus",
-                "restart": "unless-stopped",
-                "user": "nobody",
-                "volumes": [
-                    "./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro",
-                    "prometheus-data:/prometheus"
-                ],
-                "command": [
-                    "--config.file=/etc/prometheus/prometheus.yml",
-                    "--storage.tsdb.path=/prometheus",
-                    "--web.console.libraries=/etc/prometheus/console_libraries",
-                    "--web.console.templates=/etc/prometheus/consoles",
-                    "--web.enable-lifecycle"
-                ],
-                "networks": ["homelab"],
-                "labels": self._get_traefik_labels("prometheus", auth=True)
-            }
-            compose["volumes"]["prometheus-data"] = {}
-            
-            # Add node exporter
-            compose["services"]["node-exporter"] = {
-                "image": "prom/node-exporter:latest",
-                "container_name": "node-exporter",
-                "restart": "unless-stopped",
-                "pid": "host",
-                "volumes": [
-                    "/proc:/host/proc:ro",
-                    "/sys:/host/sys:ro",
-                    "/:/rootfs:ro"
-                ],
-                "command": [
-                    "--path.procfs=/host/proc",
-                    "--path.rootfs=/rootfs",
-                    "--path.sysfs=/host/sys",
-                    "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
-                ],
-                "networks": ["homelab"]
-            }
+        # Add application services
+        if self.user_config.get('enable_portainer', False):
+            services.append(self._generate_portainer_service())
         
-        if "grafana" in selected_services:
-            compose["services"]["grafana"] = {
-                "image": "grafana/grafana:latest",
-                "container_name": "grafana",
-                "restart": "unless-stopped",
-                "user": "472",
-                "environment": {
-                    "GF_SECURITY_ADMIN_USER": "admin",
-                    "GF_SECURITY_ADMIN_PASSWORD": self.secrets["grafana_admin_password"],
-                    "GF_USERS_ALLOW_SIGN_UP": "false",
-                    "GF_INSTALL_PLUGINS": "grafana-clock-panel,grafana-simple-json-datasource"
-                },
-                "volumes": [
-                    "grafana-data:/var/lib/grafana",
-                    "./grafana/provisioning:/etc/grafana/provisioning:ro"
-                ],
-                "networks": ["homelab"],
-                "labels": self._get_traefik_labels("grafana")
-            }
-            compose["volumes"]["grafana-data"] = {}
+        if self.user_config.get('enable_pihole', False):
+            services.append(self._generate_pihole_service())
         
-        # Uptime Kuma
-        if "uptime_kuma" in selected_services:
-            compose["services"]["uptime-kuma"] = {
-                "image": "louislam/uptime-kuma:latest",
-                "container_name": "uptime-kuma",
-                "restart": "unless-stopped",
-                "volumes": [
-                    "uptime-kuma-data:/app/data"
-                ],
-                "networks": ["homelab"],
-                "labels": self._get_traefik_labels("status")
-            }
-            compose["volumes"]["uptime-kuma-data"] = {}
+        if self.user_config.get('enable_nextcloud', False):
+            services.append(self._generate_nextcloud_service())
         
-        # Storage services
-        if "nextcloud" in selected_services:
-            compose["services"]["nextcloud"] = {
-                "image": "nextcloud:latest",
-                "container_name": "nextcloud",
-                "restart": "unless-stopped",
-                "environment": {
-                    "POSTGRES_HOST": "postgres",
-                    "POSTGRES_DB": "nextcloud",
-                    "POSTGRES_USER": "nextcloud",
-                    "POSTGRES_PASSWORD": self.secrets["postgres_password"],
-                    "NEXTCLOUD_ADMIN_USER": "admin",
-                    "NEXTCLOUD_ADMIN_PASSWORD": self.secrets["nextcloud_admin_password"],
-                    "NEXTCLOUD_TRUSTED_DOMAINS": self.user_config.get("basic_settings", {}).get("domain", "localhost")
-                },
-                "volumes": [
-                    "nextcloud-data:/var/www/html"
-                ],
-                "networks": ["homelab"],
-                "depends_on": ["postgres"],
-                "labels": self._get_traefik_labels("cloud")
-            }
-            compose["volumes"]["nextcloud-data"] = {}
+        if self.user_config.get('enable_gitlab', False):
+            services.append(self._generate_gitlab_service())
         
-        # Security services
-        if "vaultwarden" in selected_services:
-            compose["services"]["vaultwarden"] = {
-                "image": "vaultwarden/server:latest",
-                "container_name": "vaultwarden",
-                "restart": "unless-stopped",
-                "environment": {
-                    "DOMAIN": f"https://vault.{self.user_config.get('basic_settings', {}).get('domain', 'localhost')}",
-                    "SIGNUPS_ALLOWED": "false",
-                    "ADMIN_TOKEN": self.secrets["vaultwarden_admin_token"],
-                    "WEBSOCKET_ENABLED": "true"
-                },
-                "volumes": [
-                    "vaultwarden-data:/data"
-                ],
-                "networks": ["homelab"],
-                "labels": self._get_traefik_labels("vault")
-            }
-            compose["volumes"]["vaultwarden-data"] = {}
+        if self.user_config.get('enable_vault', False):
+            services.append(self._generate_vault_service())
         
-        if "authelia" in selected_services:
-            compose["services"]["authelia"] = {
-                "image": "authelia/authelia:latest",
-                "container_name": "authelia",
-                "restart": "unless-stopped",
-                "environment": {
-                    "TZ": self.user_config.get("basic_settings", {}).get("timezone", "UTC")
-                },
-                "volumes": [
-                    "./authelia:/config"
-                ],
-                "networks": ["homelab"],
-                "labels": self._get_traefik_labels("auth")
-            }
+        # Add networks
+        services.append("""
+networks:
+  homelab:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:
+  portainer_data:
+  nextcloud_data:
+  gitlab_data:
+  vault_data:""")
         
-        # Databases
-        if "postgresql" in selected_services or "nextcloud" in selected_services:
-            compose["services"]["postgres"] = {
-                "image": "postgres:15-alpine",
-                "container_name": "postgres",
-                "restart": "unless-stopped",
-                "environment": {
-                    "POSTGRES_PASSWORD": self.secrets["postgres_password"],
-                    "POSTGRES_USER": "homelab",
-                    "POSTGRES_DB": "homelab"
-                },
-                "volumes": [
-                    "postgres-data:/var/lib/postgresql/data"
-                ],
-                "networks": ["homelab"]
-            }
-            compose["volumes"]["postgres-data"] = {}
-        
-        if "redis" in selected_services:
-            compose["services"]["redis"] = {
-                "image": "redis:7-alpine",
-                "container_name": "redis",
-                "restart": "unless-stopped",
-                "command": f"redis-server --requirepass {self.secrets['redis_password']}",
-                "volumes": [
-                    "redis-data:/data"
-                ],
-                "networks": ["homelab"]
-            }
-            compose["volumes"]["redis-data"] = {}
-        
-        # Pi-hole
-        if self.user_config.get("networking", {}).get("use_pihole"):
-            compose["services"]["pihole"] = {
-                "image": "pihole/pihole:latest",
-                "container_name": "pihole",
-                "restart": "unless-stopped",
-                "hostname": "pihole",
-                "environment": {
-                    "TZ": self.user_config.get("basic_settings", {}).get("timezone", "UTC"),
-                    "WEBPASSWORD": self.generate_password(16),
-                    "PIHOLE_DNS_": "1.1.1.1;1.0.0.1"
-                },
-                "volumes": [
-                    "pihole-etc:/etc/pihole",
-                    "pihole-dnsmasq:/etc/dnsmasq.d"
-                ],
-                "ports": [
-                    "53:53/tcp",
-                    "53:53/udp"
-                ],
-                "networks": ["homelab"],
-                "labels": self._get_traefik_labels("pihole", port=80)
-            }
-            compose["volumes"]["pihole-etc"] = {}
-            compose["volumes"]["pihole-dnsmasq"] = {}
-        
-        # Add resource limits if enabled
-        if self.user_config.get("advanced", {}).get("enable_resource_limits"):
-            for service in compose["services"].values():
-                if "deploy" not in service:
-                    service["deploy"] = {}
-                service["deploy"]["resources"] = {
-                    "limits": {
-                        "cpus": "0.5",
-                        "memory": "512M"
-                    }
-                }
-        
-        # Save docker-compose.yml
-        compose_file = os.path.join(self.config_dir, "docker-compose.yml")
-        with open(compose_file, 'w') as f:
-            yaml.dump(compose, f, default_flow_style=False, sort_keys=False)
-        
-        self.generated_configs.append(compose_file)
-        print(f"Generated {compose_file}")
-    
-    def _get_traefik_labels(self, service: str, auth: bool = False, port: int = None) -> Dict[str, str]:
-        """Generate Traefik labels for a service"""
-        domain = self.user_config.get("basic_settings", {}).get("domain", "localhost")
-        labels = {
-            "traefik.enable": "true",
-            f"traefik.http.routers.{service}.entrypoints": "http",
-            f"traefik.http.routers.{service}.rule": f"Host(`{service}.{domain}`)",
-            f"traefik.http.middlewares.{service}-https-redirect.redirectscheme.scheme": "https",
-            f"traefik.http.routers.{service}.middlewares": f"{service}-https-redirect",
-            f"traefik.http.routers.{service}-secure.entrypoints": "https",
-            f"traefik.http.routers.{service}-secure.rule": f"Host(`{service}.{domain}`)",
-            f"traefik.http.routers.{service}-secure.tls": "true",
-            f"traefik.http.routers.{service}-secure.tls.certresolver": "cloudflare"
-        }
-        
-        if port:
-            labels[f"traefik.http.services.{service}.loadbalancer.server.port"] = str(port)
-        
-        if auth:
-            labels[f"traefik.http.routers.{service}-secure.middlewares"] = "authelia@docker"
-        
-        return labels
-    
-    def generate_backup_script(self):
-        """Generate backup script"""
-        if not self.user_config.get("backup", {}).get("enable_backups"):
-            return
-        
-        print("Generating backup script...")
-        
-        backup_script = """#!/bin/bash
+        return '\n'.join(services)
 # Automated backup script for home-lab
 
 set -euo pipefail

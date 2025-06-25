@@ -133,7 +133,7 @@ class Questionnaire:
                 key="proxy_type",
                 text="Select reverse proxy type:",
                 question_type="choice",
-                options=["nginx", "caddy", "traefik"],
+                options=["nginx", "caddy", "traefik", "swag"],
                 default="nginx",
                 depends_on={"enable_reverse_proxy": True}
             ),
