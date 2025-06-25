@@ -184,6 +184,15 @@ setup_python_environment() {
     print_info "Installing Python dependencies..."
     
     # Create requirements file
+
+# Install Python dependencies
+log "INFO" "Installing Python dependencies..."
+if ! pip3 install -r "$SCRIPT_DIR/../requirements.txt"; then
+    log "ERROR" "Failed to install Python dependencies"
+    exit 1
+fi
+log "SUCCESS" "Python dependencies installed"
+
     cat > /tmp/requirements.txt << EOF
 click>=8.0.0
 jinja2>=3.0.0
