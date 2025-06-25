@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Home-Lab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Navigation -->
+    <nav class="bg-gray-800 border-b border-gray-700">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <i class="fas fa-server text-blue-500 text-2xl mr-3"></i>
+                    <span class="font-semibold text-xl">Secure Home-Lab</span>
+                </div>
+                <div class="flex space-x-4">
+                    <a href="#services" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Services</a>
+                    <a href="#monitoring" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Monitoring</a>
+                    <a href="#security" class="text-gray-300 hover:text-white px-3 py-2 rounded-md text-sm font-medium">Security</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <div class="relative overflow-hidden">
+        <div class="max-w-7xl mx-auto">
+            <div class="relative z-10 pb-8 sm:pb-16 md:pb-20 lg:max-w-2xl lg:w-full lg:pb-28 xl:pb-32">
+                <main class="mt-10 mx-auto max-w-7xl px-4 sm:mt-12 sm:px-6 md:mt-16 lg:mt-20 lg:px-8 xl:mt-28">
+                    <div class="sm:text-center lg:text-left">
+                        <h1 class="text-4xl tracking-tight font-extrabold text-white sm:text-5xl md:text-6xl">
+                            <span class="block">Your Private</span>
+                            <span class="block text-blue-500">Home-Lab Platform</span>
+                        </h1>
+                        <p class="mt-3 text-base text-gray-300 sm:mt-5 sm:text-lg sm:max-w-xl sm:mx-auto md:mt-5 md:text-xl lg:mx-0">
+                            A secure, self-hosted infrastructure with enterprise-grade monitoring, VPN access, and automated management.
+                        </p>
+                        <div class="mt-5 sm:mt-8 sm:flex sm:justify-center lg:justify-start">
+                            <div class="rounded-md shadow">
+                                <a href="#services" class="w-full flex items-center justify-center px-8 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 md:py-4 md:text-lg md:px-10">
+                                    Explore Services
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <!-- Services Section -->
+    <div id="services" class="py-12 bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center">
+                <h2 class="text-base text-blue-500 font-semibold tracking-wide uppercase">Services</h2>
+                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
+                    Available Applications
+                </p>
+                <p class="mt-4 max-w-2xl text-xl text-gray-300 lg:mx-auto">
+                    Access your self-hosted services securely from anywhere.
+                </p>
+            </div>
+
+            <div class="mt-10">
+                <div class="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+                    <!-- Service Cards -->
+                    <div class="bg-gray-900 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                        <div class="flex items-center">
+                            <i class="fas fa-chart-line text-green-500 text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-medium text-white">Grafana</h3>
+                                <p class="mt-1 text-sm text-gray-400">Monitoring & Analytics</p>
+                            </div>
+                        </div>
+                        <a href="/grafana" class="mt-4 inline-flex items-center text-blue-500 hover:text-blue-400">
+                            Access <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                        <div class="flex items-center">
+                            <i class="fas fa-docker text-blue-500 text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-medium text-white">Portainer</h3>
+                                <p class="mt-1 text-sm text-gray-400">Container Management</p>
+                            </div>
+                        </div>
+                        <a href="/portainer" class="mt-4 inline-flex items-center text-blue-500 hover:text-blue-400">
+                            Access <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                        <div class="flex items-center">
+                            <i class="fas fa-shield-alt text-purple-500 text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-medium text-white">Pi-hole</h3>
+                                <p class="mt-1 text-sm text-gray-400">DNS Ad Blocking</p>
+                            </div>
+                        </div>
+                        <a href="/pihole" class="mt-4 inline-flex items-center text-blue-500 hover:text-blue-400">
+                            Access <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                        <div class="flex items-center">
+                            <i class="fas fa-cloud text-cyan-500 text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-medium text-white">Nextcloud</h3>
+                                <p class="mt-1 text-sm text-gray-400">File Storage & Sync</p>
+                            </div>
+                        </div>
+                        <a href="/nextcloud" class="mt-4 inline-flex items-center text-blue-500 hover:text-blue-400">
+                            Access <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                        <div class="flex items-center">
+                            <i class="fas fa-code-branch text-orange-500 text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-medium text-white">GitLab</h3>
+                                <p class="mt-1 text-sm text-gray-400">Git Repository</p>
+                            </div>
+                        </div>
+                        <a href="/gitlab" class="mt-4 inline-flex items-center text-blue-500 hover:text-blue-400">
+                            Access <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg shadow-lg p-6 hover:shadow-xl transition-shadow">
+                        <div class="flex items-center">
+                            <i class="fas fa-key text-yellow-500 text-3xl mr-4"></i>
+                            <div>
+                                <h3 class="text-lg font-medium text-white">Vault</h3>
+                                <p class="mt-1 text-sm text-gray-400">Secrets Management</p>
+                            </div>
+                        </div>
+                        <a href="/vault" class="mt-4 inline-flex items-center text-blue-500 hover:text-blue-400">
+                            Access <i class="fas fa-arrow-right ml-2"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monitoring Section -->
+    <div id="monitoring" class="py-12 bg-gray-900">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center">
+                <h2 class="text-base text-blue-500 font-semibold tracking-wide uppercase">Monitoring</h2>
+                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
+                    System Health at a Glance
+                </p>
+            </div>
+
+            <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4">
+                <div class="bg-gray-800 rounded-lg p-6 text-center">
+                    <i class="fas fa-microchip text-4xl text-green-500 mb-4"></i>
+                    <h3 class="text-lg font-medium text-white">CPU Usage</h3>
+                    <p class="text-3xl font-bold text-green-500 mt-2">23%</p>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg p-6 text-center">
+                    <i class="fas fa-memory text-4xl text-blue-500 mb-4"></i>
+                    <h3 class="text-lg font-medium text-white">Memory</h3>
+                    <p class="text-3xl font-bold text-blue-500 mt-2">45%</p>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg p-6 text-center">
+                    <i class="fas fa-hdd text-4xl text-yellow-500 mb-4"></i>
+                    <h3 class="text-lg font-medium text-white">Storage</h3>
+                    <p class="text-3xl font-bold text-yellow-500 mt-2">67%</p>
+                </div>
+
+                <div class="bg-gray-800 rounded-lg p-6 text-center">
+                    <i class="fas fa-network-wired text-4xl text-purple-500 mb-4"></i>
+                    <h3 class="text-lg font-medium text-white">Network</h3>
+                    <p class="text-3xl font-bold text-purple-500 mt-2">OK</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Security Section -->
+    <div id="security" class="py-12 bg-gray-800">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="lg:text-center">
+                <h2 class="text-base text-blue-500 font-semibold tracking-wide uppercase">Security</h2>
+                <p class="mt-2 text-3xl leading-8 font-extrabold tracking-tight text-white sm:text-4xl">
+                    Enterprise-Grade Protection
+                </p>
+            </div>
+
+            <div class="mt-10 grid grid-cols-1 gap-8 md:grid-cols-2">
+                <div class="bg-gray-900 rounded-lg p-6">
+                    <i class="fas fa-lock text-green-500 text-3xl mb-4"></i>
+                    <h3 class="text-xl font-medium text-white mb-2">Security Features</h3>
+                    <ul class="space-y-2 text-gray-300">
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>End-to-end encryption</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>WireGuard VPN access</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Automated SSL certificates</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Fail2ban intrusion prevention</li>
+                        <li><i class="fas fa-check text-green-500 mr-2"></i>Regular security updates</li>
+                    </ul>
+                </div>
+
+                <div class="bg-gray-900 rounded-lg p-6">
+                    <i class="fas fa-shield-virus text-blue-500 text-3xl mb-4"></i>
+                    <h3 class="text-xl font-medium text-white mb-2">Recent Security Events</h3>
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-400">Failed login attempts blocked</span>
+                            <span class="text-green-500">12</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-400">Firewall rules active</span>
+                            <span class="text-green-500">24</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-400">SSL certificates valid</span>
+                            <span class="text-green-500">All</span>
+                        </div>
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-400">Last security scan</span>
+                            <span class="text-gray-300">2 hours ago</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 border-t border-gray-800">
+        <div class="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-server text-blue-500 text-xl mr-2"></i>
+                    <span class="text-gray-400">Secure Home-Lab © 2024</span>
+                </div>
+                <div class="flex space-x-6">
+                    <a href="https://github.com" class="text-gray-400 hover:text-white">
+                        <i class="fab fa-github text-xl"></i>
+                    </a>
+                    <a href="/docs" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-book text-xl"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
