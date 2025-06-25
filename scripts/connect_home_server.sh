@@ -1,6 +1,6 @@
 #!/bin/bash
 # Home Server Connection Script
-# This script helps connect your home server to the VPS-hosted home-lab
+# This script helps users connect their VPS home-lab to their home server
 
 set -e
 
@@ -42,142 +42,149 @@ check_root() {
     fi
 }
 
-# Display banner
-show_banner() {
-    echo -e "${BLUE}"
-    echo "=================================================="
-    echo "    Home Server Connection Setup"
-    echo "    Secure Home-Lab Bridge Configuration"
-    echo "=================================================="
-    echo -e "${NC}"
+# Install required packages
+install_dependencies() {
+    log "INFO" "Installing required dependencies..."
+    
+    # Update package list
+    sudo apt update
+    
+    # Install required packages
+    sudo apt install -y openssh-client autossh nginx-light socat netcat-openbsd
+    
+    log "SUCCESS" "Dependencies installed"
 }
 
-# Check prerequisites
-check_prerequisites() {
-    log "INFO" "Checking prerequisites..."
+# Generate SSH key pair for secure connection
+generate_ssh_keys() {
+    local key_path="$HOME/.ssh/homelab_tunnel"
     
-    # Check if we're on the VPS or home server
-    read -p "Are you running this on your VPS (v) or Home Server (h)? [v/h]: " location
-    
-    case $location in
-        v|V)
-            LOCATION="vps"
-            log "INFO" "Configuring VPS side of the connection"
-            ;;
-        h|H)
-            LOCATION="home"
-            log "INFO" "Configuring home server side of the connection"
-            ;;
-        *)
-            log "ERROR" "Invalid selection. Please choose 'v' for VPS or 'h' for home server"
-            exit 1
-            ;;
-    esac
-    
-    # Check for required tools
-    local required_tools=("curl" "ssh" "nc")
-    for tool in "${required_tools[@]}"; do
-        if ! command -v $tool &> /dev/null; then
-            log "ERROR" "$tool is required but not installed"
-            exit 1
-        fi
-    done
-    
-    log "SUCCESS" "Prerequisites check completed"
-}
-
-# Get connection details
-get_connection_details() {
-    log "INFO" "Gathering connection details..."
-    
-    if [[ $LOCATION == "vps" ]]; then
-        # VPS configuration
-        read -p "Enter your home server's public IP (or dynamic DNS): " HOME_SERVER_IP
-        read -p "Enter SSH port for home server [22]: " HOME_SSH_PORT
-        HOME_SSH_PORT=${HOME_SSH_PORT:-22}
-        read -p "Enter username for home server: " HOME_USER
-        read -p "Enter the service port you want to expose [8080]: " HOME_SERVICE_PORT
-        HOME_SERVICE_PORT=${HOME_SERVICE_PORT:-8080}
-        read -p "Enter subdomain for this service (e.g., homeserver): " SUBDOMAIN
-        
-    else
-        # Home server configuration
-        read -p "Enter your VPS IP address: " VPS_IP
-        read -p "Enter VPS SSH port [22]: " VPS_SSH_PORT
-        VPS_SSH_PORT=${VPS_SSH_PORT:-22}
-        read -p "Enter VPS username: " VPS_USER
-        read -p "Enter local service IP [127.0.0.1]: " LOCAL_IP
-        LOCAL_IP=${LOCAL_IP:-127.0.0.1}
-        read -p "Enter local service port [8080]: " LOCAL_PORT
-        LOCAL_PORT=${LOCAL_PORT:-8080}
+    if [[ -f "$key_path" ]]; then
+        log "INFO" "SSH key already exists at $key_path"
+        return 0
     fi
+    
+    log "INFO" "Generating SSH key pair for secure tunnel..."
+    ssh-keygen -t ed25519 -f "$key_path" -N "" -C "homelab-tunnel-$(date +%Y%m%d)"
+    
+    log "SUCCESS" "SSH key generated at $key_path"
+    log "INFO" "Public key content:"
+    echo "----------------------------------------"
+    cat "$key_path.pub"
+    echo "----------------------------------------"
+    log "WARNING" "Copy the above public key to your home server's ~/.ssh/authorized_keys"
 }
 
-# Test connectivity
-test_connectivity() {
-    log "INFO" "Testing connectivity..."
+# Configure reverse SSH tunnel
+setup_reverse_tunnel() {
+    local home_server_ip=""
+    local home_server_port=""
+    local home_server_user=""
+    local local_port=""
+    local remote_port=""
     
-    if [[ $LOCATION == "vps" ]]; then
-        # Test connection to home server
-        log "INFO" "Testing SSH connection to home server..."
-        if ssh -o ConnectTimeout=10 -o BatchMode=yes -p $HOME_SSH_PORT $HOME_USER@$HOME_SERVER_IP exit 2>/dev/null; then
-            log "SUCCESS" "SSH connection to home server successful"
-        else
-            log "WARNING" "SSH connection failed. Please ensure:"
-            echo "  - Home server is accessible from internet"
-            echo "  - SSH keys are properly configured"
-            echo "  - Firewall allows SSH on port $HOME_SSH_PORT"
-        fi
-        
-        # Test service port
-        log "INFO" "Testing service port connectivity..."
-        if nc -z -w5 $HOME_SERVER_IP $HOME_SERVICE_PORT 2>/dev/null; then
-            log "SUCCESS" "Service port $HOME_SERVICE_PORT is accessible"
-        else
-            log "WARNING" "Service port $HOME_SERVICE_PORT is not accessible"
-            echo "  - Ensure the service is running on your home server"
-            echo "  - Check firewall rules on home server"
-            echo "  - Verify port forwarding on your router"
-        fi
-        
-    else
-        # Test connection to VPS
-        log "INFO" "Testing SSH connection to VPS..."
-        if ssh -o ConnectTimeout=10 -o BatchMode=yes -p $VPS_SSH_PORT $VPS_USER@$VPS_IP exit 2>/dev/null; then
-            log "SUCCESS" "SSH connection to VPS successful"
-        else
-            log "ERROR" "SSH connection to VPS failed"
-            exit 1
-        fi
-        
-        # Test local service
-        log "INFO" "Testing local service..."
-        if nc -z -w5 $LOCAL_IP $LOCAL_PORT 2>/dev/null; then
-            log "SUCCESS" "Local service is running on $LOCAL_IP:$LOCAL_PORT"
-        else
-            log "WARNING" "Local service is not accessible on $LOCAL_IP:$LOCAL_PORT"
-            echo "  - Ensure your service is running"
-            echo "  - Check if the service binds to the correct interface"
-        fi
-    fi
+    echo
+    log "INFO" "Setting up reverse SSH tunnel to home server"
+    echo
+    
+    # Get home server details
+    read -p "Enter your home server IP address: " home_server_ip
+    read -p "Enter SSH port on home server (default 22): " home_server_port
+    home_server_port=${home_server_port:-22}
+    read -p "Enter username on home server: " home_server_user
+    read -p "Enter port to expose on home server (default 8080): " local_port
+    local_port=${local_port:-8080}
+    read -p "Enter remote port to forward to (default 80): " remote_port
+    remote_port=${remote_port:-80}
+    
+    # Create tunnel configuration
+    local config_file="$HOME/.ssh/homelab_tunnel_config"
+    cat > "$config_file" << EOF
+# Home Server Tunnel Configuration
+HOME_SERVER_IP="$home_server_ip"
+HOME_SERVER_PORT="$home_server_port"
+HOME_SERVER_USER="$home_server_user"
+LOCAL_PORT="$local_port"
+REMOTE_PORT="$remote_port"
+SSH_KEY="$HOME/.ssh/homelab_tunnel"
+EOF
+    
+    # Create tunnel script
+    local tunnel_script="$HOME/bin/start_tunnel.sh"
+    mkdir -p "$HOME/bin"
+    
+    cat > "$tunnel_script" << 'EOF'
+#!/bin/bash
+# Load configuration
+source "$HOME/.ssh/homelab_tunnel_config"
+
+# Start reverse SSH tunnel
+autossh -M 0 \
+    -o "ServerAliveInterval 30" \
+    -o "ServerAliveCountMax 3" \
+    -o "StrictHostKeyChecking=no" \
+    -o "ExitOnForwardFailure=yes" \
+    -i "$SSH_KEY" \
+    -R "$LOCAL_PORT:localhost:$REMOTE_PORT" \
+    -N "$HOME_SERVER_USER@$HOME_SERVER_IP" \
+    -p "$HOME_SERVER_PORT"
+EOF
+    
+    chmod +x "$tunnel_script"
+    
+    log "SUCCESS" "Tunnel configuration created"
+    log "INFO" "Configuration saved to: $config_file"
+    log "INFO" "Tunnel script created at: $tunnel_script"
 }
 
-# Configure SSH tunnel
-configure_ssh_tunnel() {
-    log "INFO" "Configuring SSH tunnel..."
+# Create systemd service for persistent tunnel
+create_tunnel_service() {
+    log "INFO" "Creating systemd service for persistent tunnel..."
     
-    if [[ $LOCATION == "vps" ]]; then
-        # VPS side - configure reverse proxy
-        log "INFO" "Setting up reverse proxy configuration..."
-        
-        # Create nginx configuration for the home service
-        cat > "/tmp/${SUBDOMAIN}.conf" << EOF
+    local service_file="/tmp/homelab-tunnel.service"
+    cat > "$service_file" << EOF
+[Unit]
+Description=Home Lab Reverse SSH Tunnel
+After=network.target
+
+[Service]
+Type=simple
+User=$USER
+ExecStart=$HOME/bin/start_tunnel.sh
+Restart=always
+RestartSec=10
+Environment=AUTOSSH_GATETIME=0
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    
+    # Install service
+    sudo mv "$service_file" "/etc/systemd/system/"
+    sudo systemctl daemon-reload
+    sudo systemctl enable homelab-tunnel.service
+    
+    log "SUCCESS" "Systemd service created and enabled"
+    log "INFO" "Use 'sudo systemctl start homelab-tunnel' to start the tunnel"
+    log "INFO" "Use 'sudo systemctl status homelab-tunnel' to check status"
+}
+
+# Configure nginx proxy for home server
+setup_nginx_proxy() {
+    log "INFO" "Setting up nginx proxy for home server access..."
+    
+    read -p "Enter subdomain for home server (e.g., 'home' for home.yourdomain.com): " subdomain
+    read -p "Enter your domain name: " domain
+    
+    local nginx_config="/etc/nginx/sites-available/homeserver-proxy"
+    
+    sudo tee "$nginx_config" > /dev/null << EOF
 server {
     listen 80;
-    server_name ${SUBDOMAIN}.${DOMAIN:-localhost};
+    server_name $subdomain.$domain;
     
     location / {
-        proxy_pass http://127.0.0.1:${HOME_SERVICE_PORT};
+        proxy_pass http://localhost:8080;
         proxy_set_header Host \$host;
         proxy_set_header X-Real-IP \$remote_addr;
         proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
@@ -187,292 +194,152 @@ server {
         proxy_http_version 1.1;
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection "upgrade";
+        
+        # Timeouts
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
     }
 }
 EOF
-        
-        log "SUCCESS" "Nginx configuration created for ${SUBDOMAIN}"
-        echo "Copy /tmp/${SUBDOMAIN}.conf to your nginx sites-enabled directory"
-        
-    else
-        # Home server side - create SSH tunnel
-        log "INFO" "Creating SSH tunnel configuration..."
-        
-        # Create systemd service for persistent tunnel
-        cat > "/tmp/homelab-tunnel.service" << EOF
-[Unit]
-Description=Home-Lab SSH Tunnel
-After=network.target
-
-[Service]
-Type=simple
-User=$USER
-ExecStart=/usr/bin/ssh -N -R ${LOCAL_PORT}:${LOCAL_IP}:${LOCAL_PORT} -o ServerAliveInterval=60 -o ExitOnForwardFailure=yes -p ${VPS_SSH_PORT} ${VPS_USER}@${VPS_IP}
-Restart=always
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
-EOF
-        
-        log "SUCCESS" "Systemd service created"
-        echo "To install the service:"
-        echo "  sudo cp /tmp/homelab-tunnel.service /etc/systemd/system/"
-        echo "  sudo systemctl enable homelab-tunnel"
-        echo "  sudo systemctl start homelab-tunnel"
-    fi
+    
+    # Enable site
+    sudo ln -sf "$nginx_config" "/etc/nginx/sites-enabled/"
+    sudo nginx -t && sudo systemctl reload nginx
+    
+    log "SUCCESS" "Nginx proxy configured for $subdomain.$domain"
+    log "INFO" "Your home server will be accessible at: http://$subdomain.$domain"
 }
 
-# Configure WireGuard (alternative to SSH tunnel)
-configure_wireguard() {
-    log "INFO" "Setting up WireGuard configuration..."
+# Test connection to home server
+test_connection() {
+    log "INFO" "Testing connection to home server..."
     
-    if [[ $LOCATION == "vps" ]]; then
-        # VPS side - add home server as WireGuard peer
-        log "INFO" "Adding home server as WireGuard peer..."
-        
-        # Generate keys for home server
-        HOME_PRIVATE_KEY=$(wg genkey)
-        HOME_PUBLIC_KEY=$(echo $HOME_PRIVATE_KEY | wg pubkey)
-        
-        echo "Home server WireGuard configuration:"
-        cat << EOF
-[Interface]
-PrivateKey = $HOME_PRIVATE_KEY
-Address = 10.0.0.100/24
-DNS = 10.0.0.1
-
-[Peer]
-PublicKey = $(sudo cat /etc/wireguard/server_public.key 2>/dev/null || echo "VPS_PUBLIC_KEY_HERE")
-Endpoint = $(curl -s ifconfig.me):51820
-AllowedIPs = 10.0.0.0/24
-PersistentKeepalive = 25
-EOF
-        
-        echo ""
-        echo "Add this peer to your VPS WireGuard configuration:"
-        echo "[Peer]"
-        echo "PublicKey = $HOME_PUBLIC_KEY"
-        echo "AllowedIPs = 10.0.0.100/32"
-        
+    # Load configuration
+    if [[ -f "$HOME/.ssh/homelab_tunnel_config" ]]; then
+        source "$HOME/.ssh/homelab_tunnel_config"
     else
-        # Home server side - create WireGuard config
-        log "INFO" "Creating WireGuard client configuration..."
-        
-        read -p "Enter VPS WireGuard public key: " VPS_PUBLIC_KEY
-        read -p "Enter your assigned IP (e.g., 10.0.0.100): " WG_IP
-        
-        PRIVATE_KEY=$(wg genkey)
-        PUBLIC_KEY=$(echo $PRIVATE_KEY | wg pubkey)
-        
-        cat > "/tmp/homelab.conf" << EOF
-[Interface]
-PrivateKey = $PRIVATE_KEY
-Address = $WG_IP/24
-DNS = 10.0.0.1
-
-[Peer]
-PublicKey = $VPS_PUBLIC_KEY
-Endpoint = $VPS_IP:51820
-AllowedIPs = 10.0.0.0/24
-PersistentKeepalive = 25
-EOF
-        
-        log "SUCCESS" "WireGuard configuration created at /tmp/homelab.conf"
-        echo "Your public key (share with VPS admin): $PUBLIC_KEY"
-        echo ""
-        echo "To activate:"
-        echo "  sudo cp /tmp/homelab.conf /etc/wireguard/"
-        echo "  sudo systemctl enable wg-quick@homelab"
-        echo "  sudo systemctl start wg-quick@homelab"
-    fi
-}
-
-# Setup monitoring
-setup_monitoring() {
-    log "INFO" "Setting up connection monitoring..."
-    
-    if [[ $LOCATION == "home" ]]; then
-        # Create monitoring script
-        cat > "/tmp/tunnel-monitor.sh" << 'EOF'
-#!/bin/bash
-# Monitor tunnel connectivity
-
-VPS_IP="VPS_IP_PLACEHOLDER"
-LOCAL_PORT="LOCAL_PORT_PLACEHOLDER"
-
-check_tunnel() {
-    if pgrep -f "ssh.*$VPS_IP" > /dev/null; then
-        echo "$(date): Tunnel is active"
-        return 0
-    else
-        echo "$(date): Tunnel is down, attempting restart"
-        systemctl restart homelab-tunnel
+        log "ERROR" "Tunnel configuration not found. Run setup first."
         return 1
     fi
-}
-
-check_service() {
-    if nc -z 127.0.0.1 $LOCAL_PORT; then
-        echo "$(date): Local service is responding"
-        return 0
+    
+    # Test SSH connection
+    log "INFO" "Testing SSH connection..."
+    if ssh -i "$SSH_KEY" -o ConnectTimeout=10 -o StrictHostKeyChecking=no \
+           "$HOME_SERVER_USER@$HOME_SERVER_IP" -p "$HOME_SERVER_PORT" "echo 'SSH connection successful'"; then
+        log "SUCCESS" "SSH connection to home server successful"
     else
-        echo "$(date): Local service is not responding"
+        log "ERROR" "SSH connection failed. Check your configuration and network."
         return 1
     fi
-}
-
-# Main monitoring loop
-check_tunnel
-check_service
-EOF
-        
-        # Replace placeholders
-        sed -i "s/VPS_IP_PLACEHOLDER/$VPS_IP/g" /tmp/tunnel-monitor.sh
-        sed -i "s/LOCAL_PORT_PLACEHOLDER/$LOCAL_PORT/g" /tmp/tunnel-monitor.sh
-        
-        chmod +x /tmp/tunnel-monitor.sh
-        
-        log "SUCCESS" "Monitoring script created at /tmp/tunnel-monitor.sh"
-        echo "Add to crontab for regular monitoring:"
-        echo "  */5 * * * * /path/to/tunnel-monitor.sh >> /var/log/tunnel-monitor.log"
-    fi
-}
-
-# Generate documentation
-generate_docs() {
-    log "INFO" "Generating connection documentation..."
     
-    cat > "/tmp/home-server-connection.md" << EOF
-# Home Server Connection Documentation
-
-## Configuration Summary
-- **Location**: $LOCATION
-- **Date**: $(date)
-
-EOF
-    
-    if [[ $LOCATION == "vps" ]]; then
-        cat >> "/tmp/home-server-connection.md" << EOF
-### VPS Configuration
-- **Home Server IP**: $HOME_SERVER_IP
-- **Home SSH Port**: $HOME_SSH_PORT
-- **Home User**: $HOME_USER
-- **Service Port**: $HOME_SERVICE_PORT
-- **Subdomain**: $SUBDOMAIN
-
-### Access URL
-- **Service URL**: https://${SUBDOMAIN}.${DOMAIN:-your-domain.com}
-
-### Nginx Configuration
-Location: /etc/nginx/sites-enabled/${SUBDOMAIN}.conf
-
-### SSL Certificate
-Run: \`certbot --nginx -d ${SUBDOMAIN}.${DOMAIN:-your-domain.com}\`
-EOF
+    # Test tunnel
+    log "INFO" "Testing reverse tunnel..."
+    if nc -z localhost "$LOCAL_PORT" 2>/dev/null; then
+        log "SUCCESS" "Tunnel is active and port $LOCAL_PORT is accessible"
     else
-        cat >> "/tmp/home-server-connection.md" << EOF
-### Home Server Configuration
-- **VPS IP**: $VPS_IP
-- **VPS SSH Port**: $VPS_SSH_PORT
-- **VPS User**: $VPS_USER
-- **Local Service**: $LOCAL_IP:$LOCAL_PORT
-
-### SSH Tunnel Command
-\`\`\`bash
-ssh -N -R $LOCAL_PORT:$LOCAL_IP:$LOCAL_PORT -p $VPS_SSH_PORT $VPS_USER@$VPS_IP
-\`\`\`
-
-### Systemd Service
-Location: /etc/systemd/system/homelab-tunnel.service
-
-### Monitoring
-- Check tunnel: \`pgrep -f "ssh.*$VPS_IP"\`
-- Check service: \`nc -z $LOCAL_IP $LOCAL_PORT\`
-EOF
+        log "WARNING" "Tunnel port $LOCAL_PORT is not accessible. Start the tunnel service."
     fi
-    
-    cat >> "/tmp/home-server-connection.md" << EOF
-
-## Troubleshooting
-
-### Common Issues
-1. **Connection refused**: Check firewall rules
-2. **Authentication failed**: Verify SSH keys
-3. **Service unreachable**: Confirm service is running
-4. **DNS issues**: Check domain configuration
-
-### Useful Commands
-\`\`\`bash
-# Check SSH connection
-ssh -v user@server
-
-# Test port connectivity
-nc -zv host port
-
-# Monitor tunnel
-journalctl -u homelab-tunnel -f
-
-# Check nginx logs
-tail -f /var/log/nginx/error.log
-\`\`\`
-
-## Security Notes
-- Use SSH keys instead of passwords
-- Regularly update both servers
-- Monitor access logs
-- Use fail2ban for protection
-- Consider VPN instead of direct exposure
-EOF
-    
-    log "SUCCESS" "Documentation generated at /tmp/home-server-connection.md"
 }
 
-# Main execution
+# Monitor tunnel status
+monitor_tunnel() {
+    log "INFO" "Monitoring tunnel status..."
+    
+    while true; do
+        clear
+        echo "=== Home Server Tunnel Monitor ==="
+        echo "Press Ctrl+C to exit"
+        echo
+        
+        # Service status
+        if systemctl is-active --quiet homelab-tunnel; then
+            log "SUCCESS" "Tunnel service is running"
+        else
+            log "ERROR" "Tunnel service is not running"
+        fi
+        
+        # Port status
+        if nc -z localhost 8080 2>/dev/null; then
+            log "SUCCESS" "Local port 8080 is accessible"
+        else
+            log "WARNING" "Local port 8080 is not accessible"
+        fi
+        
+        # Connection test
+        if [[ -f "$HOME/.ssh/homelab_tunnel_config" ]]; then
+            source "$HOME/.ssh/homelab_tunnel_config"
+            if timeout 5 ssh -i "$SSH_KEY" -o ConnectTimeout=5 \
+                   "$HOME_SERVER_USER@$HOME_SERVER_IP" -p "$HOME_SERVER_PORT" "exit" 2>/dev/null; then
+                log "SUCCESS" "Home server is reachable"
+            else
+                log "ERROR" "Home server is not reachable"
+            fi
+        fi
+        
+        echo
+        echo "Last updated: $(date)"
+        sleep 10
+    done
+}
+
+# Main menu
+show_menu() {
+    echo
+    echo "=== Home Server Connection Setup ==="
+    echo "1. Install dependencies"
+    echo "2. Generate SSH keys"
+    echo "3. Setup reverse tunnel"
+    echo "4. Create systemd service"
+    echo "5. Setup nginx proxy"
+    echo "6. Test connection"
+    echo "7. Monitor tunnel"
+    echo "8. Exit"
+    echo
+}
+
+# Main function
 main() {
-    show_banner
     check_root
-    check_prerequisites
-    get_connection_details
-    test_connectivity
     
-    echo ""
-    log "INFO" "Choose connection method:"
-    echo "1) SSH Tunnel (recommended for simple setups)"
-    echo "2) WireGuard VPN (recommended for security)"
-    echo "3) Both (maximum flexibility)"
-    read -p "Enter your choice [1-3]: " method
-    
-    case $method in
-        1)
-            configure_ssh_tunnel
-            ;;
-        2)
-            configure_wireguard
-            ;;
-        3)
-            configure_ssh_tunnel
-            configure_wireguard
-            ;;
-        *)
-            log "ERROR" "Invalid choice"
-            exit 1
-            ;;
-    esac
-    
-    setup_monitoring
-    generate_docs
-    
-    echo ""
-    log "SUCCESS" "Home server connection setup completed!"
-    echo ""
-    echo "Next steps:"
-    echo "1. Review generated configurations in /tmp/"
-    echo "2. Copy configurations to appropriate locations"
-    echo "3. Test the connection"
-    echo "4. Set up monitoring"
-    echo ""
-    echo "Documentation: /tmp/home-server-connection.md"
+    while true; do
+        show_menu
+        read -p "Choose an option (1-8): " choice
+        
+        case $choice in
+            1)
+                install_dependencies
+                ;;
+            2)
+                generate_ssh_keys
+                ;;
+            3)
+                setup_reverse_tunnel
+                ;;
+            4)
+                create_tunnel_service
+                ;;
+            5)
+                setup_nginx_proxy
+                ;;
+            6)
+                test_connection
+                ;;
+            7)
+                monitor_tunnel
+                ;;
+            8)
+                log "INFO" "Exiting..."
+                exit 0
+                ;;
+            *)
+                log "ERROR" "Invalid option. Please choose 1-8."
+                ;;
+        esac
+        
+        echo
+        read -p "Press Enter to continue..."
+    done
 }
 
 # Run main function
