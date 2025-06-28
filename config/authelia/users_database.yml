@@ -1,0 +1,21 @@
+---
+# Users database is used by Authelia to store users credentials and information
+# Passwords must be hashed using argon2id
+# Use the included authelia hash-password tool to generate passwords
+# Example: docker-compose exec authelia authelia hash-password 'yourpassword'
+users:
+  admin:
+    displayname: "Admin User"
+    # Password will be generated and stored in secrets during setup
+    password: "$argon2id$v=19$m=65536,t=3,p=4$[ADMIN_PASSWORD_HASH]"
+    email: admin@${DOMAIN}
+    groups:
+      - admins
+      - users
+
+# Groups are used for access control rules
+groups:
+  admins:
+    - admin
+  users:
+    - admin
