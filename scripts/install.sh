@@ -212,7 +212,10 @@ configure_firewall() {
     ufw default allow outgoing
     
     # Allow SSH (check current SSH port)
-    SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}' || echo "22")
+    SSH_PORT=$(grep "^Port" /etc/ssh/sshd_config 2>/dev/null | awk '{print $2}')
+    if [[ -z "$SSH_PORT" ]]; then
+        SSH_PORT="22"
+    fi
     ufw allow "$SSH_PORT/tcp" comment "SSH"
     
     # Allow HTTP and HTTPS

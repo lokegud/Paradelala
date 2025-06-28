@@ -66,21 +66,6 @@ class Configurator:
     restart: unless-stopped
     networks:
       - homelab
-
-  heimdall:
-    image: lscr.io/linuxserver/heimdall:latest
-    container_name: heimdall
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=${TZ}
-    volumes:
-      - ./config/heimdall:/config
-    ports:
-      - 8080:80
-    restart: unless-stopped
-    networks:
-      - homelab
 """
 
     def _generate_heimdall_service(self) -> str:
@@ -101,7 +86,6 @@ class Configurator:
     networks:
       - homelab
 """
-
 
     def _generate_nginx_service(self) -> str:
         """Generate Nginx reverse proxy service"""
@@ -352,7 +336,6 @@ class Configurator:
       - homelab
 """
 
-    
     def generate_secrets(self):
         """Generate all required secrets"""
         print("Generating secrets...")
@@ -392,52 +375,6 @@ class Configurator:
             pass
         # Fallback to random key
         return self.generate_password(44)
-    
-
-    def _generate_swag_service(self) -> str:
-        """Generate SWAG reverse proxy service configuration"""
-        return """
-  swag:
-    image: lscr.io/linuxserver/swag:latest
-    container_name: swag
-    cap_add:
-      - NET_ADMIN
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=${TZ}
-      - URL=${DOMAIN}
-      - SUBDOMAINS=wildcard
-      - VALIDATION=http
-      - EMAIL=${EMAIL}
-    volumes:
-      - ./config/swag:/config
-    ports:
-      - 443:443
-      - 80:80
-    restart: unless-stopped
-    networks:
-      - homelab
-"""
-
-    def _generate_heimdall_service(self) -> str:
-        """Generate Heimdall dashboard service configuration"""
-        return """
-  heimdall:
-    image: lscr.io/linuxserver/heimdall:latest
-    container_name: heimdall
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=${TZ}
-    volumes:
-      - ./config/heimdall:/config
-    ports:
-      - 8080:80
-    restart: unless-stopped
-    networks:
-      - homelab
-"""
 
     def generate_docker_compose(self) -> str:
         """Generate docker-compose.yml content"""
@@ -511,6 +448,35 @@ volumes:
   redis_data:""")
         
         return '\n'.join(services)
+
+    def generate_nginx_config(self):
+        """Generate Nginx configuration"""
+        # Implementation for nginx config generation
+        pass
+
+    def generate_traefik_config(self):
+        """Generate Traefik configuration"""
+        # Implementation for traefik config generation
+        pass
+
+    def generate_prometheus_config(self):
+        """Generate Prometheus configuration"""
+        # Implementation for prometheus config generation
+        pass
+
+    def generate_wireguard_config(self):
+        """Generate WireGuard configuration"""
+        # Implementation for wireguard config generation
+        pass
+
+    def generate_env_file(self):
+        """Generate environment file"""
+        # Implementation for env file generation
+        pass
+
+    def generate_backup_script(self):
+        """Generate automated backup script"""
+        backup_script = """#!/bin/bash
 # Automated backup script for home-lab
 
 set -euo pipefail
@@ -535,7 +501,7 @@ mkdir -p "$BACKUP_DIR/$TIMESTAMP"
 log "Backing up Docker volumes..."
 for volume in $(docker volume ls -q); do
     log "Backing up volume: $volume"
-    docker run --rm -v "$volume:/data" -v "$BACKUP_DIR/$TIMESTAMP:/backup" \
+    docker run --rm -v "$volume:/data" -v "$BACKUP_DIR/$TIMESTAMP:/backup" \\
         alpine tar czf "/backup/$volume.tar.gz" -C /data .
 done
 
@@ -551,7 +517,7 @@ fi
 
 # Clean old backups
 log "Cleaning old backups..."
-find "$BACKUP_DIR" -maxdepth 1 -type d -mtime +$RETENTION_DAYS -exec rm -rf {{}} \;
+find "$BACKUP_DIR" -maxdepth 1 -type d -mtime +$RETENTION_DAYS -exec rm -rf {{}} \\;
 
 # Upload to S3 if configured
 if [[ -n "${{S3_BUCKET:-}}" ]]; then
