@@ -1,0 +1,46 @@
+  + Exception Group Traceback (most recent call last):
+  |   File "/usr/local/python/3.10.13/lib/python3.10/runpy.py", line 196, in _run_module_as_main
+  |     return _run_code(code, main_globals, None,
+  |   File "/usr/local/python/3.10.13/lib/python3.10/runpy.py", line 86, in _run_code
+  |     exec(code, run_globals)
+  |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/mcp_server_git/__main__.py", line 5, in <module>
+  |     main()
+  |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/click/core.py", line 1442, in __call__
+  |     return self.main(*args, **kwargs)
+  |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/click/core.py", line 1363, in main
+  |     rv = self.invoke(ctx)
+  |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/click/core.py", line 1226, in invoke
+  |     return ctx.invoke(self.callback, **ctx.params)
+  |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/click/core.py", line 794, in invoke
+  |     return callback(*args, **kwargs)
+  |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/mcp_server_git/__init__.py", line 21, in main
+  |     asyncio.run(serve(repository))
+  |   File "/usr/local/python/3.10.13/lib/python3.10/asyncio/runners.py", line 44, in run
+  |     return loop.run_until_complete(main)
+  |   File "/usr/local/python/3.10.13/lib/python3.10/asyncio/base_events.py", line 649, in run_until_complete
+  |     return future.result()
+  |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/mcp_server_git/server.py", line 428, in serve
+  |     async with stdio_server() as (read_stream, write_stream):
+  |   File "/usr/local/python/3.10.13/lib/python3.10/contextlib.py", line 206, in __aexit__
+  |     await anext(self.gen)
+  |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/mcp/server/stdio.py", line 85, in stdio_server
+  |     async with anyio.create_task_group() as tg:
+  |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/anyio/_backends/_asyncio.py", line 772, in __aexit__
+  |     raise BaseExceptionGroup(
+  | exceptiongroup.ExceptionGroup: unhandled errors in a TaskGroup (1 sub-exception)
+  +-+---------------- 1 ----------------
+    | Traceback (most recent call last):
+    |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/mcp/server/stdio.py", line 63, in stdin_reader
+    |     async for line in stdin:
+    |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/anyio/_core/_fileio.py", line 83, in __aiter__
+    |     line = await self.readline()
+    |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/anyio/_core/_fileio.py", line 99, in readline
+    |     return await to_thread.run_sync(self._fp.readline)
+    |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/anyio/to_thread.py", line 56, in run_sync
+    |     return await get_async_backend().run_sync_in_worker_thread(
+    |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/anyio/_backends/_asyncio.py", line 2470, in run_sync_in_worker_thread
+    |     return await future
+    |   File "/usr/local/python/3.10.13/lib/python3.10/site-packages/anyio/_backends/_asyncio.py", line 967, in run
+    |     result = context.run(func, *args)
+    | OSError: [Errno 9] Bad file descriptor
+    +------------------------------------
