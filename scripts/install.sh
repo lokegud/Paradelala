@@ -253,6 +253,51 @@ cleanup() {
 }
 
 # Main execution
+install_nodejs() {
+    if command -v node &> /dev/null; then
+        NODE_VERSION=$(node -v | sed 's/v//')
+        NODE_MAJOR_VERSION=$(echo "$NODE_VERSION" | cut -d. -f1)
+        if [ "$NODE_MAJOR_VERSION" -ge 20 ]; then
+            print_success "Node.js version $NODE_VERSION is already installed"
+            return
+        else
+            print_warning "Node.js version $NODE_VERSION is installed but version 20 or higher is required"
+        fi
+    else
+        print_info "Node.js is not installed"
+    fi
+
+    print_info "Installing Node.js 20.x..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y nodejs
+
+    NODE_VERSION_INSTALLED=$(node -v | sed 's/v//')
+    if [ "$(echo $NODE_VERSION_INSTALLED | cut -d. -f1)" -ge 20 ]; then
+        print_success "Node.js version $NODE_VERSION_INSTALLED installed successfully"
+    else
+        print_error "Failed to install Node.js 20.x"
+        exit 1
+    fi
+}
+
+install_gcli() {
+    print_info "Installing Gemini CLI (gcli) from source..."
+
+    # Change to gcli directory
+    cd "$(dirname "$0")/../gcli"
+
+    # Install dependencies
+    npm ci
+
+    # Build the project
+    npm run build
+
+    # Link the CLI globally
+    npm link
+
+    print_success "Gemini CLI installed successfully"
+}
+
 main() {
     print_banner
     
@@ -275,10 +320,12 @@ main() {
     
     # Installation steps
     install_system_packages
+    install_nodejs
     install_docker
     install_docker_compose
     setup_python_environment
     configure_firewall
+    install_gcli
     
     echo
     print_success "All dependencies installed successfully!"
