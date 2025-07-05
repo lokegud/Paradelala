@@ -281,19 +281,10 @@ install_nodejs() {
 }
 
 install_gcli() {
-    print_info "Installing Gemini CLI (gcli) from source..."
+    print_info "Installing Gemini CLI (gcli)..."
 
-    # Change to gcli directory
-    cd "$(dirname "$0")/../gcli"
-
-    # Install dependencies
-    npm ci
-
-    # Build the project
-    npm run build
-
-    # Link the CLI globally
-    npm link
+    # Install the published package globally
+    npm install -g @google/gemini-cli
 
     print_success "Gemini CLI installed successfully"
 }
